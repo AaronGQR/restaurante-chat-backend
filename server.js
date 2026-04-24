@@ -6,58 +6,60 @@ import OpenAI from "openai";
 dotenv.config();
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
-// 🟢 test
+// 👇 OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// 🟢 Ruta base (para comprobar que funciona)
 app.get("/", (req, res) => {
   res.send("🍔 Restaurante IA online funcionando");
 });
 
-// 🤖 cliente OpenAI
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// 💬 CHATBOT
+// 🟢 Chat endpoint
 app.post("/chat", async (req, res) => {
-  const message = req.body.message;
-
-  console.log("📩 Mensaje:", message);
-
   try {
-    const response = await client.chat.completions.create({
+    const message = req.body.message;
+
+    if (!message) {
+      return res.json({ reply: "Escribe un mensaje 🍽️" });
+    }
+
+    // 🔥 llamada a OpenAI (modelo correcto)
+    const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: "Eres un camarero profesional de restaurante. Responde corto, amable y claro."
+          content:
+            "Eres un asistente de restaurante amable. Ayudas a tomar pedidos, reservas y responder dudas del menú.",
         },
         {
           role: "user",
-          content: message
-        }
-      ]
+          content: message,
+        },
+      ],
     });
 
-    res.json({
-      reply: response.choices[0].message.content
-    });
+    const reply = response.choices[0].message.content;
+
+    res.json({ reply });
 
   } catch (error) {
-    console.log("❌ ERROR:");
-    console.dir(error, { depth: null });
+    console.error("🔥 ERROR REAL:", error);
 
-    res.status(500).json({
-      reply: "Error en el restaurante 🍽️"
+    res.json({
+      reply: "Error en el restaurante 🍽️",
     });
   }
 });
 
-// 🚀 IMPORTANTE PARA RENDER (PUERTO DINÁMICO)
+// 🟢 PORT dinámico (IMPORTANTE para Render)
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
-  console.log("🍔 Restaurante IA en puerto", PORT);
+  console.log(`🍔 Restaurante IA en http://localhost:${PORT}`);
 });
